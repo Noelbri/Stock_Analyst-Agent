@@ -58,4 +58,27 @@ def fetch_stock_price(query):
     except Exception as e:
         return f"Error retrieving stock data for {stock_symbol}: {str(e)}"
     
-    
+def agent_node(state, agent, name):
+    result = agent.invoke(state)
+    print(f"{name} Output: {result['messages'][-1].content}")
+    return {
+        "messages": [HumanMessage(content=result['messages'][-1].content, name=name)]
+    }
+
+market_data_prompt = (
+    "You are the Market Data Agent. Your role is to retrieve the latest stock prices or"
+    "market information based on user queries. Ensure your response includes the current price"
+    "and any relevant market details if available."
+)
+market_data_agent = create_react_agent(llm, tools=[fetch_stock_price], state_modifier=market_data_prompt)
+market_data_node = functools.partial(agent_node, agent=market_data_agent, name="Market_Data_Agent")
+
+# Financial Analysis Tool and Agent prompt
+def perform_financial_analysis(query):
+    """Perform financial analysis based on user query."""
+    if "ROI" in query:
+        initial_investment = 1000
+        final_value = 1200
+        roi = (final_value - initial_investment) / initial_investment * 100
+        return f"for an initial investment of ${initial_investment} yeilding ${final_value}, the ROI is{roi}%."
+    return "No relevant financial analysis found."
