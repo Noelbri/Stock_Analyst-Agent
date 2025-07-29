@@ -82,3 +82,30 @@ def perform_financial_analysis(query):
         roi = (final_value - initial_investment) / initial_investment * 100
         return f"for an initial investment of ${initial_investment} yeilding ${final_value}, the ROI is{roi}%."
     return "No relevant financial analysis found."
+
+analysis_prompt = (
+    "You are the financial analysis agent. Analyze the financial data provided in the query"
+    "Perform calculations like ROI, growth rates, or other financial metrics as required."
+    "provide a clear and concise response"
+    "Only use the following tools:"
+    "perform_financial_analysis"
+)
+analysis_agent = create_react_agent(llm, tools=[perform_financial_analysis], state_modifier=analysis_prompt)
+analysis_node = functools.partial(agent_node, agent=analysis_agent, name="Analysis_Agent")
+
+# Financial News Tool and Agent prompt
+financial_news_tool = TavilySearchResults(max_results=5, api_key=TAVILY_API_KEY)
+news_prompt = (
+    "You are the financial news agent. Retrieve the latest financial news articles relevant to the user's query."
+    "Use search tools to gather up-to-date news information and summarize key points."
+    "Do not quote sources, just give a summary."
+)
+financial_news_agent = create_react_agent(llm, tools=[financial_news_tool], state_modifier=news_prompt)
+news_node = functools.partial(agent_node, agent=financial_news_agent, name="News_Agent")
+
+# Define Workflow state
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], operator.add]
+    next: str
+
+# Define the workflow with the supervisor and agent nodes
