@@ -109,3 +109,32 @@ class AgentState(TypedDict):
     next: str
 
 # Define the workflow with the supervisor and agent nodes
+workflow_fin = StateGraph(AgentState)
+workflow_fin.add_node("Market_Data_Agent", market_data_node)
+workflow_fin.add_node("Analysis_Agent", analysis_node)
+workflow_fin.add_node("News_Agent", news_node)
+workflow_fin.add_node("Supervisor_Agent", supervisor_agent_fin)
+
+# Define edges for agents to return to the supervisor
+for member in members_fin:
+    workflow_fin.add_edge(member, "supervisor")
+
+# Conditional map for routing based on supervisor's decision
+conditional_map_fin = {
+    "Market_Data_Agent": "Market_Data_Agent",
+    "Analysis_Agent": "Analysis_Agent",
+    "News_Agent": "News_Agent",
+    "FINISH": END  # This will end the workflow when the supervisor decides
+}
+workflow_fin.add_conditional_edges("supervisor", lambda x:x["next"], conditional_map_fin)
+workflow_fin.add_edge(START, "supervisor")
+
+# Compile the workflow
+graph_fin = workflow_fin.compile()
+
+# Testing the workflow with an example input
+inputs_fin = {"messages": [HumanMessage(content="What is the current stock price of AAPL?")]}
+
+for output in graph_fin.stream(inputs_fin):
+    if "__end__" not in output:
+        print(output.content)
