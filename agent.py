@@ -40,3 +40,22 @@ prompt_fin = ChatPromptTemplate.from_messages([
     MessagePlaceholder(variable_name="messages"),
     ("system", "Choose the next agent from: {options}."),
 ]).partial(options=str(members_fin))
+
+# Supervisor agent
+def supervisor_agent_fin(state):
+    supervisor_chain_fin = prompt_fin | llm.with_structured_output(RouteResponseFin)
+    return supervisor_chain_fin.invoke(state)
+
+# Define tools and Agent Prompts
+# Market Data tool and Agent prompt
+def fetch_stock_price(query):
+    """Fetch the current stock price of a given stock symbol."""
+    stock_symbol = query.split()[-1]
+    stock = yf.Ticker(stock_symbol)
+    try:
+        current_price = stock.info.get("currentPrice")
+        return f"The current stock price of {stock_symbol} is ${current_price}."
+    except Exception as e:
+        return f"Error retrieving stock data for {stock_symbol}: {str(e)}"
+    
+    
